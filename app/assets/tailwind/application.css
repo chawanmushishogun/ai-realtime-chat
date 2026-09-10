@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* 共通ユーティリティを v4 の @utility で宣言 */
+@utility bubble-base {
+  @apply max-w-[80%] whitespace-pre-wrap break-words px-4 py-2 text-sm rounded-2xl shadow-sm;
+}
+
+@layer components {
+  .card { @apply bg-white/90 backdrop-blur rounded-2xl shadow-sm ring-1 ring-slate-900/5; }
+  .btn-primary { @apply inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-400; }
+  .input-text { @apply w-full rounded-2xl border-2 border-slate-300 bg-white/95 p-4 shadow-inner focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-100; }
+
+  .bubble-right { @apply bubble-base bg-sky-600 text-white rounded-br-md my-2 md:my-3; }
+  .bubble-left  { @apply bubble-base bg-white text-slate-800 rounded-bl-md ring-1 ring-slate-900/5 my-2 md:my-3; }
+
+  .role-user { @apply text-[10px] uppercase tracking-wider text-sky-600; }
+  .role-assistant { @apply text-[10px] uppercase tracking-wider text-slate-500; }
+
+  /* 8章: Markdown表示 */
+  .markdown-body { @apply whitespace-normal; }
+  .markdown-body h1 { @apply text-lg font-bold mt-2 mb-1; }
+  .markdown-body h2 { @apply text-base font-bold mt-2 mb-1; }
+  .markdown-body h3 { @apply text-sm font-bold mt-2 mb-1; }
+  .markdown-body p { @apply my-1; }
+  .markdown-body ul { @apply list-disc pl-5 my-1; }
+  .markdown-body ol { @apply list-decimal pl-5 my-1; }
+  .markdown-body blockquote { @apply border-l-4 border-slate-300 pl-3 my-1 text-slate-600; }
+  .markdown-body pre { @apply relative my-2; }
+  .markdown-body code { @apply bg-slate-100 rounded px-1 py-0.5 text-[0.85em]; }
+  .markdown-body pre code { @apply block p-3 rounded-lg overflow-auto text-sm bg-transparent; }
+  .markdown-body a { @apply text-sky-600 underline; }
+  .markdown-body table { @apply border-collapse my-2; }
+  .markdown-body th, .markdown-body td { @apply border border-slate-300 px-2 py-1 text-xs; }
+
+  .button-copy { @apply absolute top-2 right-2 text-xs bg-slate-200 hover:bg-slate-300 rounded px-2 py-0.5; }
+}
+
+@import "./highlight-github.css";
+
+@layer utilities {
+  .dotting::after {
+    display: inline-block; overflow: hidden; vertical-align: bottom;
+    content: '...'; width: 0; animation: dots steps(4, end) 1.5s infinite;
+  }
+  @keyframes dots { to { width: 3ch; } }
+}

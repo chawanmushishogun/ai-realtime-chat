@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16
+    platform: linux/amd64
+    environment:
+      TZ: Asia/Tokyo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: app_development
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  redis:
+    image: redis:7
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    tty: true
+    stdin_open: true
+    ports:
+      - "3001:3000"
+    volumes:
+      - .:/app
+      - bundle_data:/usr/local/bundle:cached
+    depends_on:
+      - db
+      - redis
+    environment:
+      RAILS_ENV: development
+      REDIS_URL: redis://redis:6379/1
+
+volumes:
+  postgres_data:
+  redis_data:
+  bundle_data:

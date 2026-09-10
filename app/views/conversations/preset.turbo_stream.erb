@@ -1,0 +1,6 @@
+<%= turbo_stream.replace "conversation_system_prompt_wrapper" do %>
+  <div id="conversation_system_prompt_wrapper">
+    <textarea id="conversation_system_prompt" name="conversation[system_prompt]" rows="14"
+      class="w-full flex-1 font-mono text-sm rounded-xl border border-slate-200 focus:border-sky-400 focus:ring focus:ring-sky-200 focus:ring-opacity-50 resize-none p-3 bg-white"><%= @preset_system_prompt || @conversation.system_prompt %></textarea>
+  </div>
+<% end %>

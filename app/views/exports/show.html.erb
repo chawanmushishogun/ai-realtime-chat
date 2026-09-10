@@ -1,0 +1,10 @@
+<h1><%= @conversation.title.presence || "Conversation ##{@conversation.id}" %></h1>
+<p class="meta">
+  Exported: <%= Time.current.strftime("%Y-%m-%d %H:%M") %><br>
+  Messages: <%= @conversation.messages.count %>
+</p>
+
+<% @conversation.messages.order(:created_at).each do |m| %>
+  <h2>[<%= m.role %>] <%= m.created_at.strftime("%Y-%m-%d %H:%M") %></h2>
+  <%= md_to_html(m.content) %>
+<% end %>

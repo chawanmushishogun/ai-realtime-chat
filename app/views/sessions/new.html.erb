@@ -1,0 +1,26 @@
+<div class="flex items-center justify-center h-dvh px-4 bg-gray-50">
+  <div class="w-full max-w-md bg-white rounded-xl shadow-md p-6">
+    <h1 class="text-lg font-semibold text-slate-800 mb-6">ログイン</h1>
+
+    <%= form_with url: session_path, method: :post, class: "space-y-5" do %>
+      <div>
+        <label for="email" class="block text-sm font-medium text-slate-600 mb-2">メール</label>
+        <input type="email" name="email" id="email" required
+               class="w-full rounded-lg border border-gray-300 bg-gray-50 focus:bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500 px-3 py-2" />
+      </div>
+
+      <div>
+        <label for="password" class="block text-sm font-medium text-slate-600 mb-2">パスワード</label>
+        <input type="password" name="password" id="password" required
+               class="w-full rounded-lg border border-gray-300 bg-gray-50 focus:bg-white shadow-sm focus:ring-sky-500 focus:border-sky-500 px-3 py-2" />
+      </div>
+
+      <div class="pt-2">
+        <button type="submit"
+                class="w-full btn-primary h-11 rounded-lg text-base font-medium">
+          ログイン
+        </button>
+      </div>
+    <% end %>
+  </div>
+</div>

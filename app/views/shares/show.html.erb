@@ -1,0 +1,21 @@
+<div class="min-h-dvh bg-gray-50 py-8 px-4">
+  <div class="w-full max-w-3xl mx-auto">
+    <div class="mb-4">
+      <h1 class="text-lg font-semibold text-slate-800"><%= @conversation.title.presence || "Conversation" %></h1>
+      <p class="text-xs text-slate-500">共有された会話（読み取り専用）</p>
+    </div>
+
+    <div class="card p-4 flex flex-col gap-3">
+      <% @conversation.messages.order(:created_at).each do |m| %>
+        <div class="flex w-full <%= m.user? ? 'justify-end' : 'justify-start' %>">
+          <div class="flex w-full <%= m.user? ? 'justify-end' : 'justify-start' %>">
+            <div>
+              <div class="<%= m.user? ? 'role-user' : 'role-assistant' %> mb-1"><%= m.user? ? "YOU" : "ASSISTANT" %></div>
+              <div class="<%= m.user? ? 'bubble-right' : 'bubble-left' %> markdown-body"><%= md_to_html(m.content) %></div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

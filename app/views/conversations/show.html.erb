@@ -1,0 +1,320 @@
+<div class="relative h-dvh overflow-hidden bg-gray-50 flex">
+  <!-- 左ペイン: 会話一覧 -->
+  <aside class="w-72 shrink-0 h-full border-r border-slate-200 bg-white/70 backdrop-blur flex flex-col">
+    <div class="p-3 border-b border-slate-200">
+      <%= form_with url: conversations_path, method: :get, class: "flex gap-2" do %>
+        <input type="text" name="q" value="<%= @q %>" placeholder="検索"
+          class="flex-1 rounded-lg border border-slate-300 text-sm px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-200">
+        <button type="submit" class="text-xs px-2 rounded-lg bg-slate-100 hover:bg-slate-200">検索</button>
+      <% end %>
+      <%= button_to "＋ 新規会話", conversations_path, method: :post, class: "w-full mt-2 btn-primary h-9 text-sm justify-center" %>
+    </div>
+    <ul class="flex-1 overflow-y-auto divide-y divide-slate-100">
+      <% @conversations.each do |c| %>
+        <li>
+          <%= link_to conversation_path(c), class: "block px-3 py-2 text-sm hover:bg-sky-50 #{'bg-sky-100' if c.id == @conversation.id}" do %>
+            <div class="font-medium text-slate-800 truncate"><%= c.title.presence || "Untitled" %></div>
+            <div class="text-xs text-slate-400"><%= c.updated_at.strftime("%m/%d %H:%M") %></div>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  </aside>
+
+  <!-- 右ペイン: 選択中の会話 -->
+  <div class="flex-1 h-full flex flex-col relative">
+    <header class="h-14 bg-white/80 backdrop-blur shrink-0">
+      <div class="w-full h-full px-4 py-3 md:px-6 flex items-center justify-between">
+        <div>
+          <h1 class="text-lg font-semibold text-slate-800"><%= @conversation.title.presence || "Conversation" %></h1>
+          <p class="text-xs text-slate-500">Realtime AI Chat</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <%= button_to "タイトル再生成", retitle_conversation_path(@conversation), method: :post, class: "btn-primary h-9 px-3 text-sm" %>
+          <button type="button" id="edit-last" class="btn-primary h-9 px-3 text-sm">編集して再送</button>
+          <button type="button" id="regenerate" class="btn-primary h-9 px-3 text-sm">再生成</button>
+          <%= link_to "設定", edit_conversation_path(@conversation), class: "btn-primary h-9 px-3 text-sm" %>
+
+          <details class="relative">
+            <summary class="btn-primary h-9 px-3 text-sm cursor-pointer list-none">その他 ▾</summary>
+            <div class="absolute right-0 mt-1 w-44 bg-white rounded-lg shadow-lg ring-1 ring-slate-900/10 py-1 z-10 text-sm">
+              <%= link_to "エクスポート (Markdown)", export_conversation_path(@conversation, f: "md"), class: "block px-3 py-2 hover:bg-slate-50" %>
+              <%= link_to "エクスポート (HTML)", export_conversation_path(@conversation, f: "html"), class: "block px-3 py-2 hover:bg-slate-50" %>
+              <%= link_to "エクスポート (PDF)", export_conversation_path(@conversation, f: "pdf"), class: "block px-3 py-2 hover:bg-slate-50" %>
+              <form id="share-form" action="<%= share_conversation_path(@conversation) %>" method="post">
+                <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+                <button type="submit" class="w-full text-left px-3 py-2 hover:bg-slate-50">共有リンクを発行</button>
+              </form>
+              <%= button_to (@conversation.archived_at? ? "アーカイブ解除" : "アーカイブ"), archive_conversation_path(@conversation), method: :post, class: "w-full text-left px-3 py-2 hover:bg-slate-50" %>
+              <%= button_to "削除", conversation_path(@conversation), method: :delete, class: "w-full text-left px-3 py-2 text-red-600 hover:bg-red-50", form: { data: { turbo_confirm: "この会話を削除しますか？" } } %>
+            </div>
+          </details>
+          <form id="stop-form" action="<%= stop_messages_path %>" method="post" class="h-full flex items-center">
+            <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+            <input type="hidden" id="conversation_id" name="conversation_id" value="<%= @conversation.id %>">
+            <button type="submit" id="stop" class="btn-primary h-9 px-3 text-sm" disabled>停止</button>
+          </form>
+          <%= button_to "ログアウト", session_path, method: :delete, class: "btn-primary h-9 px-3 text-sm" %>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-hidden px-4 md:px-6 py-3">
+      <div id="log" class="card p-4 h-full flex flex-col gap-3 md:gap-4 overflow-y-auto">
+        <% @conversation.messages.order(:created_at).each do |m| %>
+          <div class="flex w-full <%= m.user? ? 'justify-end' : 'justify-start' %>">
+            <div class="flex w-full <%= m.user? ? 'justify-end' : 'justify-start' %>">
+              <div>
+                <div class="<%= m.user? ? 'role-user' : 'role-assistant' %> mb-1"><%= m.user? ? "YOU" : "ASSISTANT" %></div>
+                <div class="<%= m.user? ? 'bubble-right' : 'bubble-left' %> markdown-body" data-raw="<%= m.content %>"><%= m.content %></div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </main>
+
+    <footer class="shrink-0 bg-gray-50 backdrop-blur px-4 md:px-6 pb-4">
+      <form id="form" action="<%= messages_path %>" method="post" class="w-full card p-4">
+        <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+        <input type="hidden" name="conversation_id" value="<%= @conversation.id %>">
+
+        <label for="content" class="block text-xs font-semibold text-slate-500 mb-2">メッセージ</label>
+        <textarea id="content" name="message[content]" rows="2"
+          class="input-text resize-none"
+          placeholder="Shift+Enterで改行 / Enterで送信"
+          style="height:auto;max-height:96px;overflow:auto"></textarea>
+
+        <div class="mt-2 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <label class="text-xs text-slate-500 cursor-pointer hover:text-sky-600">
+              📎 添付
+              <input type="file" name="message[files][]" id="files" multiple accept="application/pdf,image/*" class="hidden">
+            </label>
+            <span id="file-names" class="text-xs text-slate-400"></span>
+            <p class="text-xs text-slate-500">Enterで送信 / Shift+Enterで改行 ・ <span id="token-counter">~0 tok</span></p>
+          </div>
+          <button type="submit" id="send" class="btn-primary h-10 px-5">送信</button>
+        </div>
+      </form>
+    </footer>
+  </div>
+</div>
+
+<script type="module">
+  import { subscribeChat } from "channels/chat_channel"
+  import { marked } from "marked"
+  import DOMPurify from "dompurify"
+  import hljs from "highlight.js"
+
+  const log = document.getElementById("log")
+  const form = document.getElementById("form")
+  const stopForm = document.getElementById("stop-form")
+  const area = document.getElementById("content")
+  const stopBtn = document.getElementById("stop")
+  const tokenCounter = document.getElementById("token-counter")
+  const regenerateBtn = document.getElementById("regenerate")
+  const editLastBtn = document.getElementById("edit-last")
+
+  const cid = (document.querySelector('input[name="conversation_id"]').value)
+  const csrfToken = document.querySelector('input[name="authenticity_token"]').value
+
+  function renderMarkdownSafe(text) {
+    const html = marked.parse(text || "")
+    return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } })
+  }
+
+  function withProvisionalFences(text) {
+    const fenceCount = (text.match(/```/g) || []).length
+    return fenceCount % 2 === 1 ? text + "\n```" : text
+  }
+
+  function attachCopyButton(codeEl) {
+    const pre = codeEl.closest('pre')
+    if (!pre || pre.querySelector('.button-copy')) return
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'button-copy'; btn.textContent = 'Copy'
+    btn.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(codeEl.innerText)
+      const old = btn.textContent; btn.textContent = 'Copied!'
+      setTimeout(() => btn.textContent = old, 800)
+    })
+    pre.appendChild(btn)
+  }
+
+  function enhanceCodeBlocks(container) {
+    container.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightElement(block)
+      attachCopyButton(block)
+    })
+  }
+
+  function renderAssistantLive(el, assembling) {
+    const safeHTML = renderMarkdownSafe(withProvisionalFences(assembling))
+    el.innerHTML = safeHTML
+    enhanceCodeBlocks(el)
+  }
+
+  function newRow(sender) {
+    const row = document.createElement("div")
+    row.className = "flex w-full " + (sender === "user" ? "justify-end" : "justify-start")
+
+    const wrap = document.createElement("div")
+    wrap.className = "flex w-full " + (sender === "user" ? "justify-end" : "justify-start")
+
+    const role = document.createElement("div")
+    role.className = (sender === "user") ? "role-user mb-1" : "role-assistant mb-1"
+    role.textContent = (sender === "user") ? "YOU" : "ASSISTANT"
+
+    const bubble = document.createElement("div")
+    bubble.className = (sender === "user") ? "bubble-right markdown-body" : "bubble-left markdown-body"
+
+    wrap.appendChild(role)
+    wrap.appendChild(bubble)
+    row.appendChild(wrap)
+    log.appendChild(row)
+    log.scrollTop = log.scrollHeight
+    return bubble
+  }
+
+  function appendErrorRetry(reason) {
+    const row = document.createElement("div")
+    row.className = "flex w-full justify-start"
+    const bubble = document.createElement("div")
+    bubble.className = "bubble-left"
+    bubble.textContent = `[error] ${reason}`
+    const btn = document.createElement("button")
+    btn.type = "button"
+    btn.textContent = "再試行"
+    btn.className = "ml-2 text-xs underline text-sky-600"
+    btn.addEventListener("click", () => {
+      form.requestSubmit()
+      row.remove()
+    })
+    bubble.appendChild(document.createElement("br"))
+    bubble.appendChild(btn)
+    row.appendChild(bubble)
+    log.appendChild(row)
+    log.scrollTop = log.scrollHeight
+  }
+
+  let assembling = ""
+  let generating = false
+  let aiMsgEl = null
+
+  function setGenerating(state) {
+    generating = state
+    stopBtn.disabled = !state
+    regenerateBtn.disabled = state
+    editLastBtn.disabled = state
+    document.body.classList.toggle("dotting", state)
+  }
+
+  subscribeChat(cid, (payload) => {
+    if (payload.event === "start") {
+      setGenerating(true)
+      assembling = ""
+      aiMsgEl = newRow("assistant")
+      return
+    }
+    if (payload.event === "delta") {
+      assembling += payload.body || ""
+      if (!aiMsgEl) aiMsgEl = newRow("assistant")
+      renderAssistantLive(aiMsgEl, assembling)
+      log.scrollTop = log.scrollHeight
+      return
+    }
+    if (payload.event === "done") {
+      if (aiMsgEl) renderAssistantLive(aiMsgEl, assembling)
+      setGenerating(false)
+      return
+    }
+    if (payload.event === "error") {
+      setGenerating(false)
+      appendErrorRetry(payload.body)
+      return
+    }
+  })
+
+  function estimateTokens(s) { return Math.ceil((s || '').length / 3.5) }
+  area.addEventListener('input', () => {
+    tokenCounter.textContent = `~${estimateTokens(area.value)} tok`
+  })
+
+  const filesInput = document.getElementById("files")
+  const fileNames = document.getElementById("file-names")
+  filesInput.addEventListener("change", () => {
+    fileNames.textContent = [...filesInput.files].map(f => f.name).join(", ")
+  })
+
+  let composing = false
+  area.addEventListener("compositionstart", () => composing = true)
+  area.addEventListener("compositionend",   () => composing = false)
+  area.addEventListener("keydown", (e) => {
+    if (e.isComposing || composing) return
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  })
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault()
+    if (generating) return
+    const fd = new FormData(form)
+    const btn = document.getElementById("send")
+    const prev = btn.innerHTML
+    btn.disabled = true; btn.innerHTML = "送信中..."
+    const mine = newRow("user")
+    mine.innerHTML = renderMarkdownSafe((fd.get("message[content]") || "").toString())
+    try {
+      const res = await fetch(form.action, { method: "POST", headers: { "Accept": "text/vnd.turbo-stream.html" }, body: fd })
+      if (!res.ok) appendErrorRetry(`HTTP ${res.status}`)
+      area.value = ""; area.focus()
+      tokenCounter.textContent = "~0 tok"
+      filesInput.value = ""; fileNames.textContent = ""
+    } catch (err) {
+      appendErrorRetry(err.message)
+    } finally {
+      btn.disabled = false; btn.innerHTML = prev
+    }
+  })
+
+  stopForm.addEventListener("submit", async (e) => {
+    e.preventDefault()
+    if (!generating) return
+    const token = stopForm.querySelector('input[name="authenticity_token"]').value
+    const body = new URLSearchParams({ conversation_id: cid })
+    await fetch(stopForm.action, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRF-Token": token }, body })
+  })
+
+  regenerateBtn.addEventListener("click", async () => {
+    if (generating) return
+    const body = new URLSearchParams({ conversation_id: cid })
+    await fetch("/messages/regenerate", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRF-Token": csrfToken }, body })
+  })
+
+  editLastBtn.addEventListener("click", () => {
+    const lastUser = [...document.querySelectorAll(".role-user + .bubble-right")].pop()
+    if (lastUser) { area.value = lastUser.textContent.trim(); area.focus() }
+  })
+
+  // ---- 共有リンク発行 ----
+  document.getElementById("share-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault()
+    const f = e.target
+    const token = f.querySelector('input[name="authenticity_token"]').value
+    const res = await fetch(f.action, { method: 'POST', headers: { 'X-CSRF-Token': token, 'Accept': 'application/json' } })
+    const json = await res.json()
+    if (navigator.clipboard) await navigator.clipboard.writeText(json.url)
+    alert(`共有リンクをコピーしました\n有効期限: ${json.expires_at}\n${json.url}`)
+  })
+
+  // 既存ログ（DBから読んだ生テキスト）にもMarkdown/ハイライトを適用
+  // ※ このモジュールスクリプトの実行タイミングは DOMContentLoaded より後になることがあるため、
+  //   イベント待ちにせずページ読み込み時点で直接実行する。
+  document.querySelectorAll('#log .markdown-body[data-raw]').forEach((el) => {
+    const raw = el.dataset.raw
+    el.innerHTML = renderMarkdownSafe(raw)
+    enhanceCodeBlocks(el)
+  })
+  log.scrollTop = log.scrollHeight
+</script>

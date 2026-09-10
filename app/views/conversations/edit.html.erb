@@ -1,0 +1,79 @@
+<div class="h-dvh flex flex-col">
+  <header class="h-14 flex items-center px-6 border-b border-slate-200 bg-white/70 backdrop-blur">
+    <h1 class="text-lg font-semibold">会話設定</h1>
+  </header>
+
+  <main class="flex-1 overflow-y-auto px-6 py-6">
+    <%= form_with model: @conversation, url: conversation_path(@conversation), method: :patch, class: "grid grid-cols-1 md:grid-cols-3 gap-6" do |f| %>
+      <!-- Left: System Prompt -->
+      <div class="md:col-span-2 bg-white rounded-2xl shadow p-6 flex flex-col">
+        <label for="conversation_system_prompt" class="block text-sm font-medium text-slate-700 mb-2">
+          System Prompt
+        </label>
+        <div id="conversation_system_prompt_wrapper">
+        <%= f.text_area :system_prompt,
+          id: "conversation_system_prompt",
+          rows: 14,
+          class: "w-full flex-1 font-mono text-sm rounded-xl border border-slate-200 focus:border-sky-400 focus:ring focus:ring-sky-200 focus:ring-opacity-50 resize-none p-3 bg-white" %>
+        </div>
+      </div>
+
+      <!-- Right: Parameters -->
+      <div class="bg-white rounded-2xl shadow p-6 space-y-5">
+        <!-- Preset -->
+        <div>
+          <label for="preset" class="block text-sm font-medium text-slate-700 mb-1">プリセット</label>
+          <select id="preset"
+            class="w-full rounded-xl border border-slate-200 text-sm focus:border-sky-400 focus:ring focus:ring-sky-200 focus:ring-opacity-50 bg-white p-2">
+            <option value="">選択してください</option>
+            <% PROMPT_PRESETS.each do |key, v| %>
+              <option value="<%= key %>"><%= v[:label] %></option>
+            <% end %>
+          </select>
+        </div>
+
+        <hr class="border-slate-200">
+
+        <!-- Model -->
+        <div>
+          <label for="conversation_model" class="block text-sm font-medium text-slate-700 mb-1">Model</label>
+          <%= f.text_field :model,
+            class: "w-full rounded-xl border border-slate-200 text-sm focus:border-sky-400 focus:ring focus:ring-sky-200 focus:ring-opacity-50 bg-white p-2" %>
+        </div>
+
+        <!-- Parameters -->
+        <% {
+          temperature: "temperature (0.0–2.0)",
+          top_p: "top_p (0.0–1.0)",
+          presence_penalty: "presence_penalty (-2.0–2.0)",
+          frequency_penalty: "frequency_penalty (-2.0–2.0)"
+        }.each do |field, label| %>
+          <div>
+            <label for="conversation_<%= field %>" class="block text-sm font-medium text-slate-700 mb-1"><%= label %></label>
+            <%= f.number_field field,
+              step: 0.1,
+              class: "w-full rounded-xl border border-slate-200 text-sm focus:border-sky-400 focus:ring focus:ring-sky-200 focus:ring-opacity-50 bg-white p-2" %>
+          </div>
+        <% end %>
+
+        <!-- Save Button -->
+        <div class="pt-2">
+          <%= f.submit "保存", class: "btn-primary w-full h-10 rounded-xl" %>
+        </div>
+      </div>
+    <% end %>
+  </main>
+</div>
+
+<script>
+  const sel = document.getElementById('preset')
+  sel?.addEventListener('change', () => {
+    const p = sel.value
+    if (!p) return
+    fetch(`<%= preset_conversation_path(@conversation) %>?preset=${p}`, {
+      headers: { 'Accept': 'text/vnd.turbo-stream.html' }
+    })
+    .then(res => res.text())
+    .then(html => Turbo.renderStreamMessage(html))
+  })
+</script>

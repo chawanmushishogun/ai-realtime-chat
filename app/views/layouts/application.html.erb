@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Realtime AI Chat</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+
+    <style>
+      :root { --grad: radial-gradient(1200px 400px at 50% -10%, rgba(56,189,248,.25), transparent); }
+      body { background: #f8fafc var(--grad) no-repeat; }
+    </style>
+  </head>
+  <body class="h-dvh overflow-hidden text-slate-800">
+    <% if notice %>
+      <p class="fixed top-2 left-1/2 -translate-x-1/2 z-50 bg-emerald-50 text-emerald-700 text-sm px-4 py-2 rounded-lg shadow"><%= notice %></p>
+    <% end %>
+    <% if alert %>
+      <p class="fixed top-2 left-1/2 -translate-x-1/2 z-50 bg-red-50 text-red-700 text-sm px-4 py-2 rounded-lg shadow"><%= alert %></p>
+    <% end %>
+    <%= yield %>
+  </body>
+</html>

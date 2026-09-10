@@ -34,7 +34,7 @@ gem "bcrypt", "~> 3.1"
 gem "rack-attack"
 
 # Rails 7.2 の redis_cache_store と互換性のあるバージョンに固定
-gem "connection_pool", "~> 2.4"
+gem "connection_pool", "~> 3.0"
 
 # jsonb のデフォルト値生成で使われる quirks_mode 互換のため固定
 gem "json", "~> 2.7"

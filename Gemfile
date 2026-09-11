@@ -37,7 +37,7 @@ gem "rack-attack"
 gem "connection_pool", "~> 2.4"
 
 # jsonb のデフォルト値生成で使われる quirks_mode 互換のため固定
-gem "json", "~> 2.7"
+gem "json", "~> 3.0"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
